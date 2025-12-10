@@ -141,7 +141,7 @@ def load_and_process_data():
         st.error("❌ 'clinical.tsv' not found.")
         return None, None
     try:
-        expr = pd.read_csv("expression.txt", sep="\t", index_col=0, nrows=2000)
+        expr = pd.read_csv("expression.txt.gz", sep="\t", index_col=0, nrows=2000, compression="gzip")
         st.success(f"✅ Loaded {expr.shape[0]} genes and {expr.shape[1]} samples.")
     except FileNotFoundError:
         st.warning("⚠️ 'expression.txt' not found. Using Mock Data.")
