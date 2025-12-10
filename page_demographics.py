@@ -158,7 +158,7 @@ def page_demographics():
             color=alt.Color("Count:Q", scale=alt.Scale(scheme="blues"), title="Cases"),
             size="Count:Q",
             tooltip=tooltip_fields
-        ).properties(height=300, width=600, title="Subtype Distribution by Race/Ethnicity")
+        ).properties(height=300, width=600, title="Subtype Distribution by Race")
         
         st.altair_chart(treemap_chart, use_container_width=True)
     else:
