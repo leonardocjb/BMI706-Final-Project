@@ -82,7 +82,7 @@ def load_and_preprocess_brca(path: str, drop_missing_time: bool = True):
         brca_df.get("demographic.ethnicity", pd.Series("Unknown"))
     )
     brca_df["site"] = clean_string_series(
-        brca_df.get("diagnoses.anatomic_site", pd.Series("Unknown"))
+        brca_df.get("cases.primary_site", pd.Series("Unknown"))
     )
     brca_df["country"] = clean_string_series(
         brca_df.get(
@@ -1228,7 +1228,7 @@ def page_demographics():
     
     with filter_col2:
         # Filter text box
-        filter_text = st.text_input("Filter (race/ethnicity/site)", "")
+        filter_text = st.text_input("Filter (race/ethnicity)", "")
         
         # Age range slider
         age_range = st.slider(
@@ -1266,12 +1266,11 @@ def page_demographics():
         )
         filtered_df = filtered_df[keep_mask]
     
-    # Text filter (searches across race, ethnicity, site)
+    # Text filter (searches across race, ethnicity)
     if filter_text:
         mask = (
-            filtered_df["race"].str.contains(filter_text, case=False, na=False) |
-            filtered_df["ethnicity"].str.contains(filter_text, case=False, na=False) |
-            filtered_df["site"].str.contains(filter_text, case=False, na=False)
+            filtered_df["race"].astype(str).str.contains(filter_text, case=False, na=False) |
+            filtered_df["ethnicity"].astype(str).str.contains(filter_text, case=False, na=False)
         )
         filtered_df = filtered_df[mask]
     
