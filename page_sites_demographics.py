@@ -155,42 +155,58 @@ def page_sites_demographics():
         st.info("No subtype data available for current filters.")
     st.divider()
     
-    # --- Lucy's View: Tumor Site & Co-occurrence ---
-    st.subheader("Tumor Site Analysis")
+    # --- Stage at Diagnosis by Demographics ---
+    st.subheader("Stage at Diagnosis by Demographics")
     
-    col_site1, col_site2 = st.columns([1.2, 2])
+    col1, col2 = st.columns([1, 1])
     
-    with col_site1:
-        st.write("**Primary Sites**")
+    with col1:
+        st.write("**Stage Distribution by Race**")
         
-        # Site distribution
-        site_counts = filtered_df["site"].value_counts().reset_index()
-        site_counts.columns = ["Site", "Count"]
-        site_counts = site_counts[site_counts["Site"] != "Unknown"].head(10)
+        # Stage by race
+        stage_by_race = filtered_df.groupby(["race", "stage"]).size().reset_index(name="Count")
+        stage_by_race = stage_by_race[stage_by_race["race"] != "Unknown"]
+        stage_by_race = stage_by_race[stage_by_race["stage"] != "Unknown"]
         
-        if not site_counts.empty:
-            site_chart = alt.Chart(site_counts).mark_bar(color="#4c78a8").encode(
-                x=alt.X("Count:Q", title="Number of Patients"),
-                y=alt.Y("Site:N", sort="-x", title="Anatomical Site"),
-                tooltip=["Site", "Count"]
-            ).properties(height=300)
+        if not stage_by_race.empty:
+            # Calculate percentages within each race
+            stage_by_race["Total"] = stage_by_race.groupby("race")["Count"].transform("sum")
+            stage_by_race["Percentage"] = (100 * stage_by_race["Count"] / stage_by_race["Total"]).round(1)
             
-            st.altair_chart(site_chart, use_container_width=True)
-    
-    with col_site2:
-        st.write("**Demographics by Age**")
-        age_hist = filtered_df[["age"]].dropna()
-        
-        if not age_hist.empty:
-            age_chart = alt.Chart(age_hist).mark_bar(color="#72b7b2").encode(
-                x=alt.X("age:Q", bin=alt.Bin(maxbins=15), title="Age at Diagnosis"),
-                y=alt.Y("count():Q", title="Number of Patients"),
-                tooltip=["count()"]
-            ).properties(height=300, title="Age Distribution")
+            stage_race_chart = alt.Chart(stage_by_race).mark_bar().encode(
+                x=alt.X("Percentage:Q", title="Percentage (%)", stack="normalize"),
+                y=alt.Y("race:N", title="Race"),
+                color=alt.Color("stage:N", title="Stage", scale=alt.Scale(scheme="category10")),
+                tooltip=["race", "stage", "Count", "Percentage"]
+            ).properties(height=300, title="Stage Distribution by Race (100% Stacked)")
             
-            st.altair_chart(age_chart, use_container_width=True)
+            st.altair_chart(stage_race_chart, use_container_width=True)
         else:
-            st.info("No age data available.")
+            st.info("No stage/race data available.")
+    
+    with col2:
+        st.write("**Stage Distribution by Ethnicity**")
+        
+        # Stage by ethnicity
+        stage_by_ethnicity = filtered_df.groupby(["ethnicity", "stage"]).size().reset_index(name="Count")
+        stage_by_ethnicity = stage_by_ethnicity[stage_by_ethnicity["ethnicity"] != "Unknown"]
+        stage_by_ethnicity = stage_by_ethnicity[stage_by_ethnicity["stage"] != "Unknown"]
+        
+        if not stage_by_ethnicity.empty:
+            # Calculate percentages within each ethnicity
+            stage_by_ethnicity["Total"] = stage_by_ethnicity.groupby("ethnicity")["Count"].transform("sum")
+            stage_by_ethnicity["Percentage"] = (100 * stage_by_ethnicity["Count"] / stage_by_ethnicity["Total"]).round(1)
+            
+            stage_ethnicity_chart = alt.Chart(stage_by_ethnicity).mark_bar().encode(
+                x=alt.X("Percentage:Q", title="Percentage (%)", stack="normalize"),
+                y=alt.Y("ethnicity:N", title="Ethnicity"),
+                color=alt.Color("stage:N", title="Stage", scale=alt.Scale(scheme="category10")),
+                tooltip=["ethnicity", "stage", "Count", "Percentage"]
+            ).properties(height=300, title="Stage Distribution by Ethnicity (100% Stacked)")
+            
+            st.altair_chart(stage_ethnicity_chart, use_container_width=True)
+        else:
+            st.info("No stage/ethnicity data available.")
     
     st.divider()
     
