@@ -128,25 +128,29 @@ def page_sites_demographics():
         "Stage IV": "#d62728"
     }
     
-    if not subtype_counts.empty:
+    # Subtype distribution by race/ethnicity
+    subtype_by_demo = filtered_df.groupby(["stage", "race"]).size().reset_index(name="Count")
+    subtype_by_demo = subtype_by_demo[subtype_by_demo["stage"] != "Unknown"]
+    subtype_by_demo = subtype_by_demo[subtype_by_demo["race"] != "Unknown"]
+    
+    if not subtype_by_demo.empty:
         if normalize_by == "Total Cases":
-            subtype_counts["Percentage"] = 100 * subtype_counts["Count"] / subtype_counts["Count"].sum()
-            encoding_field = "Percentage:Q"
-            title_suffix = " (%)"
+            total = subtype_by_demo["Count"].sum()
+            subtype_by_demo["Percentage"] = (100 * subtype_by_demo["Count"] / total).round(1)
+            tooltip_fields = ["stage", "race", "Count", "Percentage"]
         else:
-            encoding_field = "Count:Q"
-            title_suffix = ""
+            tooltip_fields = ["stage", "race", "Count"]
         
-        subtype_chart = alt.Chart(subtype_counts).mark_bar().encode(
-            x=alt.X(encoding_field, title=f"Cases{title_suffix}"),
-            y=alt.Y("Subtype:N", sort="-x", title="Stage/Subtype"),
-            color=alt.Color("Subtype:N", scale=alt.Scale(domain=list(subtype_colors.keys()), 
-                                                         range=list(subtype_colors.values())),
-                           title="Subtype"),
-            tooltip=["Subtype", "Count"]
-        ).properties(height=300, width=400)
+        # Create treemap showing subtype distribution by race
+        treemap_chart = alt.Chart(subtype_by_demo).mark_rect().encode(
+            x=alt.X("race:N", title="Race"),
+            y=alt.Y("stage:N", title="Stage/Subtype"),
+            color=alt.Color("Count:Q", scale=alt.Scale(scheme="blues"), title="Cases"),
+            size="Count:Q",
+            tooltip=tooltip_fields
+        ).properties(height=300, width=600, title="Subtype Distribution by Race/Ethnicity")
         
-        st.altair_chart(subtype_chart, use_container_width=True)
+        st.altair_chart(treemap_chart, use_container_width=True)
     else:
         st.info("No subtype data available for current filters.")
     st.divider()
