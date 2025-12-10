@@ -17,7 +17,7 @@ def clean_numeric_series(s: pd.Series) -> pd.Series:
 
 
 @st.cache_data
-def load_and_preprocess_brca(path: str) -> pd.DataFrame:
+def load_and_preprocess_brca(path: str, drop_missing_time: bool = True) -> pd.DataFrame:
     """
     Load clinical.tsv and preprocess for BRCA analysis.
     
@@ -58,4 +58,6 @@ def load_and_preprocess_brca(path: str) -> pd.DataFrame:
     country_birth = clean_string_series(brca_df.get("demographic.country_of_birth", pd.Series(np.nan)))
     brca_df["country"] = country_res.fillna(country_birth)
     
-    return brca_df.dropna(subset=["time"])
+    if drop_missing_time:
+        brca_df = brca_df.dropna(subset=["time"])
+    return brca_df

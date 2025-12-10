@@ -18,7 +18,7 @@ def page_demographics():
     
     # Load data
     try:
-        brca_df = load_and_preprocess_brca("clinical.tsv")
+        brca_df = load_and_preprocess_brca("clinical.tsv", drop_missing_time=False)
     except:
         st.error("Error: Could not locate clinical.tsv")
         return
@@ -64,9 +64,16 @@ def page_demographics():
     # Age range filter
     filtered_df = filtered_df[(filtered_df["age"] >= age_range[0]) & (filtered_df["age"] <= age_range[1])]
     
-    # Unknown/missing filter
+    # Unknown/missing filter across key demographic fields
     if not include_unknown:
-        filtered_df = filtered_df[filtered_df["stage"] != "Unknown"]
+        keep_mask = (
+            (filtered_df["stage"].notna()) & (filtered_df["stage"] != "Unknown") &
+            (filtered_df["race"].notna()) & (filtered_df["race"] != "Unknown") &
+            (filtered_df["ethnicity"].notna()) & (filtered_df["ethnicity"] != "Unknown") &
+            (filtered_df["site"].notna()) & (filtered_df["site"] != "Unknown") &
+            (filtered_df["country"].notna()) & (filtered_df["country"] != "Unknown")
+        )
+        filtered_df = filtered_df[keep_mask]
     
     # Text filter (searches across race, ethnicity, site)
     if filter_text:
@@ -119,7 +126,8 @@ def page_demographics():
     # Subtype distribution (using stage as proxy for subtype)
     subtype_counts = filtered_df["stage"].value_counts().reset_index()
     subtype_counts.columns = ["Subtype", "Count"]
-    subtype_counts = subtype_counts[subtype_counts["Subtype"] != "Unknown"]
+    if not include_unknown:
+        subtype_counts = subtype_counts[subtype_counts["Subtype"] != "Unknown"]
     
     # Define consistent color scheme for subtypes
     subtype_colors = {
@@ -131,8 +139,9 @@ def page_demographics():
     
     # Subtype distribution by race/ethnicity
     subtype_by_demo = filtered_df.groupby(["stage", "race"]).size().reset_index(name="Count")
-    subtype_by_demo = subtype_by_demo[subtype_by_demo["stage"] != "Unknown"]
-    subtype_by_demo = subtype_by_demo[subtype_by_demo["race"] != "Unknown"]
+    if not include_unknown:
+        subtype_by_demo = subtype_by_demo[subtype_by_demo["stage"] != "Unknown"]
+        subtype_by_demo = subtype_by_demo[subtype_by_demo["race"] != "Unknown"]
     
     if not subtype_by_demo.empty:
         if normalize_by == "Total Cases":
@@ -166,8 +175,9 @@ def page_demographics():
         
         # Stage by race
         stage_by_race = filtered_df.groupby(["race", "stage"]).size().reset_index(name="Count")
-        stage_by_race = stage_by_race[stage_by_race["race"] != "Unknown"]
-        stage_by_race = stage_by_race[stage_by_race["stage"] != "Unknown"]
+        if not include_unknown:
+            stage_by_race = stage_by_race[stage_by_race["race"] != "Unknown"]
+            stage_by_race = stage_by_race[stage_by_race["stage"] != "Unknown"]
         
         if not stage_by_race.empty:
             # Calculate percentages within each race
@@ -179,7 +189,7 @@ def page_demographics():
                 y=alt.Y("race:N", title="Race"),
                 color=alt.Color("stage:N", title="Stage", scale=alt.Scale(scheme="category10")),
                 tooltip=["race", "stage", "Count", "Percentage"]
-            ).properties(height=300, title="Stage Distribution by Race (100% Stacked)")
+            ).properties(height=300)
             
             st.altair_chart(stage_race_chart, use_container_width=True)
         else:
@@ -190,8 +200,9 @@ def page_demographics():
         
         # Stage by ethnicity
         stage_by_ethnicity = filtered_df.groupby(["ethnicity", "stage"]).size().reset_index(name="Count")
-        stage_by_ethnicity = stage_by_ethnicity[stage_by_ethnicity["ethnicity"] != "Unknown"]
-        stage_by_ethnicity = stage_by_ethnicity[stage_by_ethnicity["stage"] != "Unknown"]
+        if not include_unknown:
+            stage_by_ethnicity = stage_by_ethnicity[stage_by_ethnicity["ethnicity"] != "Unknown"]
+            stage_by_ethnicity = stage_by_ethnicity[stage_by_ethnicity["stage"] != "Unknown"]
         
         if not stage_by_ethnicity.empty:
             # Calculate percentages within each ethnicity
@@ -203,7 +214,7 @@ def page_demographics():
                 y=alt.Y("ethnicity:N", title="Ethnicity"),
                 color=alt.Color("stage:N", title="Stage", scale=alt.Scale(scheme="category10")),
                 tooltip=["ethnicity", "stage", "Count", "Percentage"]
-            ).properties(height=300, title="Stage Distribution by Ethnicity (100% Stacked)")
+            ).properties(height=300)
             
             st.altair_chart(stage_ethnicity_chart, use_container_width=True)
         else:
